@@ -4,7 +4,7 @@ import helper
 import warnings
 from distutils.version import LooseVersion
 import project_tests as tests
-
+import matplotlib.pyplot as plt
 
 # Check TensorFlow Version
 assert LooseVersion(tf.__version__) >= LooseVersion('1.0'), 'Please use TensorFlow version 1.0 or newer.  You are using {}'.format(tf.__version__)
@@ -55,14 +55,28 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     :return: The Tensor for the last layer of output
     """
     # TODO: Implement function
-    conv_1x1 = tf.layers.conv2d(vgg_layer7_out, num_classes, 1, strides=(1,1), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
-    output1 = tf.layers.conv2d_transpose(conv_1x1, num_classes, 4, strides=(2, 2), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
-    output2 = tf.layers.conv2d_transpose(output1, num_classes, 4, strides=(2, 2), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
-    output3 = tf.layers.conv2d_transpose(output2, num_classes, 16, strides=(8, 8), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+
+    # 1x1 convolution of layer 7 output (to 32x upsampled)
+    conv_7 = tf.layers.conv2d(vgg_layer7_out, num_classes, (1,1), (1,1), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+
+    # Deconvolution of layer 7 (to 16x upsampled)
+    deconv_7 = tf.layers.conv2d_transpose(conv_7, num_classes, (4, 4), (2, 2), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+
+    # Add skip layer from layer 4 output
+    conv_4 = tf.layers.conv2d(vgg_layer4_out, num_classes, (1,1), (1,1), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    sum_4_7 = tf.add(deconv_7, conv_4)
+
+    # Deconvolve combined 4/7 layers (to 8x upsampled)
+    deconv_4_7 = tf.layers.conv2d_transpose(sum_4_7, num_classes, (4, 4), (2, 2), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+
+    # Add skip layer from layer 3 output
+    conv_3 = tf.layers.conv2d(vgg_layer3_out, num_classes, (1,1), (1,1), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    sum_3_4_7 = tf.add(deconv_4_7, conv_3)
+
+    # Deconvolve combined 3/4/7 layers (to original image size)
+    output = tf.layers.conv2d_transpose(sum_3_4_7, num_classes, (16, 16), (8, 8), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
     
-    tf.Print(output3, [tf.shape(output3)])
-    
-    return output3
+    return output
 tests.test_layers(layers)
 
 
@@ -104,16 +118,28 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
     :param learning_rate: TF Placeholder for learning rate
     """
     # TODO: Implement function
-    KEEP_PROB = 0.75        # Default = 0.75
-    LEARNING_RATE = 0.0015  # Default = 0.001
+    KEEP_PROB = 0.75
+    LEARNING_RATE = 0.0015
     
+    print("Training...")
     sess.run(tf.global_variables_initializer())
+    
+    losses = []
+    epoch_number = []
+    
     for epoch in range(epochs):
+        print("Epoch ", epoch)
         for images, labels in get_batches_fn(batch_size):
             # Do training
             res, loss = sess.run([train_op, cross_entropy_loss], feed_dict={input_image: images, correct_label: labels, keep_prob: KEEP_PROB, learning_rate: LEARNING_RATE})
-            
-            print("Loss = ", loss)
+        
+        epoch_number.append(epoch)
+        losses.append(loss)
+        print("Loss = ", loss)
+    
+    # Plot loss evolution over epochs
+    plt.plot(epoch_number, losses)
+    plt.savefig('./runs/loss.png')
 
 tests.test_train_nn(train_nn)
 
@@ -151,8 +177,8 @@ def run():
         logits, train_op, cross_entropy_loss = optimize(output_layer, correct_label, learning_rate, num_classes)
 
         # TODO: Train NN using the train_nn function
-        EPOCHS = 8
-        BATCH_SIZE = 1
+        EPOCHS = 10
+        BATCH_SIZE = 8
         
         train_nn(sess, EPOCHS, BATCH_SIZE, get_batches_fn, train_op, cross_entropy_loss, input_image, correct_label, keep_prob, learning_rate)
 
