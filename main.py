@@ -138,8 +138,8 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
         print("Loss = ", loss)
     
     # Plot loss evolution over epochs
-    plt.plot(epoch_number, losses)
-    plt.savefig('./runs/loss.png')
+    #plt.plot(epoch_number, losses)
+    #plt.savefig('./runs/loss.png')
 
 tests.test_train_nn(train_nn)
 
