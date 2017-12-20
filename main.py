@@ -58,24 +58,36 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     # TODO: Implement function
 
     # 1x1 convolution of layer 7 output (to 32x upsampled)
-    conv_7 = tf.layers.conv2d(vgg_layer7_out, num_classes, (1,1), (1,1), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    conv_7 = tf.layers.conv2d(vgg_layer7_out, num_classes, (1,1), (1,1), padding='same',
+                              kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+                              kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
 
     # Deconvolution of layer 7 (to 16x upsampled)
-    deconv_7 = tf.layers.conv2d_transpose(conv_7, num_classes, (4, 4), (2, 2), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    deconv_7 = tf.layers.conv2d_transpose(conv_7, num_classes, (4, 4), (2, 2), padding='same',
+                                          kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+                                          kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
 
     # Add skip layer from layer 4 output
-    conv_4 = tf.layers.conv2d(vgg_layer4_out, num_classes, (1,1), (1,1), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    conv_4 = tf.layers.conv2d(vgg_layer4_out, num_classes, (1,1), (1,1), padding='same',
+                              kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+                              kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
     sum_4_7 = tf.add(deconv_7, conv_4)
 
     # Deconvolve combined 4/7 layers (to 8x upsampled)
-    deconv_4_7 = tf.layers.conv2d_transpose(sum_4_7, num_classes, (4, 4), (2, 2), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    deconv_4_7 = tf.layers.conv2d_transpose(sum_4_7, num_classes, (4, 4), (2, 2), padding='same',
+                                            kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+                                            kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
 
     # Add skip layer from layer 3 output
-    conv_3 = tf.layers.conv2d(vgg_layer3_out, num_classes, (1,1), (1,1), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    conv_3 = tf.layers.conv2d(vgg_layer3_out, num_classes, (1,1), (1,1), padding='same',
+                              kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+                              kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
     sum_3_4_7 = tf.add(deconv_4_7, conv_3)
 
     # Deconvolve combined 3/4/7 layers (to original image size)
-    output = tf.layers.conv2d_transpose(sum_3_4_7, num_classes, (16, 16), (8, 8), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    output = tf.layers.conv2d_transpose(sum_3_4_7, num_classes, (16, 16), (8, 8), padding='same',
+                                        kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+                                        kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
     
     return output
 tests.test_layers(layers)
@@ -121,8 +133,8 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
     """
     # TODO: Implement function
     
-    KEEP_PROB = 0.45
-    LEARNING_RATE = 0.0008
+    KEEP_PROB = 0.5
+    LEARNING_RATE = 0.0005
     
     print("Training...")
     sess.run(tf.global_variables_initializer())
@@ -171,7 +183,7 @@ def run():
 
         # TODO: Train NN using the train_nn function
         EPOCHS = 25
-        BATCH_SIZE = 8
+        BATCH_SIZE = 6
         
         train_nn(sess, EPOCHS, BATCH_SIZE, get_batches_fn, train_op, cross_entropy_loss, input_image, correct_label, keep_prob, learning_rate)
 
