@@ -121,8 +121,8 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
     """
     # TODO: Implement function
     
-    KEEP_PROB = 0.4
-    LEARNING_RATE = 0.0015
+    KEEP_PROB = 0.45
+    LEARNING_RATE = 0.0008
     
     print("Training...")
     sess.run(tf.global_variables_initializer())
