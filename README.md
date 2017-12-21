@@ -1,7 +1,7 @@
 # Semantic Segmentation
 
 ### Results
-Results from the final trained network can be found here: [results](./runs/best/)
+Results from the final trained network can be found [here](./runs/best/).
 
 ### Introduction
 In this project, you'll label the pixels of a road in images using a Fully Convolutional Network (FCN).
